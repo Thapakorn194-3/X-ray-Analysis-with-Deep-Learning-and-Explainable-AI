@@ -37,13 +37,13 @@ pip install flask flask-cors tensorflow scikit-image scikit-learn joblib xgboost
 
 นำไฟล์ทั้งหมดไปไว้ในโฟลเดอร์โปรเจกต์เดียวกัน โดยจัดโครงสร้างดังนี้:
 
-project_folder/
-├── static/
-│   └── index.html          # หน้าเว็บหลัก
-├── app.py                  # โปรแกรม
-├── exp2_best.keras         # โมเดล CNN
-├── svm1_best.pkl           # โมเดล SVM
-├── xgb1_best.json          # โมเดล XGBoost
+project_folder/ \n
+├── static/ \n
+│   └── index.html          # หน้าเว็บหลัก \n
+├── app.py                  # โปรแกรม \n
+├── exp2_best.keras         # โมเดล CNN \n
+├── svm1_best.pkl           # โมเดล SVM \n
+├── xgb1_best.json          # โมเดล XGBoost \n
 
 
 app.py: วางไว้ที่โฟลเดอร์หลัก 
@@ -56,12 +56,12 @@ index.html: ต้องนำไปใส่ไว้ในโฟลเดอ�
 เปิดไฟล์ app.py ด้วย Text Editor และค้นหาส่วน MODEL_PATHS (จะอยู่ช่วงต้นไฟล์) จากนั้นแก้ไข Path ของไฟล์โมเดลให้ตรงกับตำแหน่งที่บันทึกไว้ในเครื่อง:
 
 Python
-MODEL_PATHS = {
-    'cnn': r'D:\DEMO\exp2_best.keras',
-    'svm': r'D:\DEMO\svm1_best.pkl',
-    'xgb': r'D:\DEMO\xgb1_best.json',
-}
-ข้อแนะนำ: หากใช้ Windows แนะนำให้ใส่ r ไว้หน้า String (ตามตัวอย่าง) หรือใช้เครื่องหมาย / แทน \ เพื่อป้องกัน Error จาก Path
+MODEL_PATHS = { \n
+    'cnn': r'D:\DEMO\exp2_best.keras', \n
+    'svm': r'D:\DEMO\svm1_best.pkl', \n
+    'xgb': r'D:\DEMO\xgb1_best.json', \n
+} \n
+ข้อแนะนำ: หากใช้ Windows แนะนำให้ใส่ r ไว้หน้า String (ตามตัวอย่าง) หรือใช้เครื่องหมาย / แทน \ เพื่อป้องกัน Error จาก Path \n
 
 ### 2.5 รันเซิร์ฟเวอร์
 เมื่อตั้งค่าเสร็จแล้ว ให้รันเซิร์ฟเวอร์ด้วยคำสั่ง:
