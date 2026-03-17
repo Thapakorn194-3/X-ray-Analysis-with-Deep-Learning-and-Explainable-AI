@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TB-XAI — Tuberculosis Detection System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   ROOT & RESET
+═══════════════════════════════════════════ */
+:root {
+  --bg:           #f0f2ff;
+  --surface:      #ffffff;
+  --surface2:     #f8f9ff;
+  --surface3:     #eef1ff;
+  --border:       #dde2f5;
+  --border2:      #c8cfed;
+  --primary:      #667eea;
+  --primary2:     #764ba2;
+  --primary-dim:  #667eea18;
+  --primary-mid:  #667eea55;
+  --grad:         linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --green:        #27ae60;
+  --green-dim:    #27ae6018;
+  --red:          #e74c3c;
+  --red-dim:      #e74c3c18;
+  --amber:        #f39c12;
+  --amber-dim:    #f39c1218;
+  --text:         #1a1f3a;
+  --text-mid:     #4a5578;
+  --text-dim:     #8892b0;
+  --font-display: 'Syne', sans-serif;
+  --font-mono:    'DM Mono', monospace;
+  --font-body:    'DM Sans', sans-serif;
+  --radius:       12px;
+  --radius-lg:    20px;
+  --shadow:       0 4px 24px rgba(102,126,234,0.12);
+  --shadow-glow:  0 0 40px rgba(102,126,234,0.18);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--grad);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* subtle dot grid texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.18) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════ */
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+}
+
+.app-inner {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.22);
+  overflow: hidden;
+  padding: 0 0 40px;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
+.header {
+  padding: 36px 40px 32px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  background: var(--grad);
+  animation: fadeDown 0.6s ease both;
+}
+
+.header-left {}
+
+.header-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: white;
+}
+
+.header h1 span {
+  color: rgba(255,255,255,0.6);
+}
+
+.header-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,0.75);
+  margin-top: 10px;
+  font-weight: 300;
+}
+
+.model-status-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.6);
+  transition: all 0.3s;
+  backdrop-filter: blur(8px);
+}
+
+.status-pill.ready {
+  border-color: rgba(255,255,255,0.8);
+  color: white;
+  background: rgba(255,255,255,0.25);
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-pill.ready .status-dot {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+/* ═══════════════════════════════════════════
+   TWO-COLUMN MAIN LAYOUT
+═══════════════════════════════════════════ */
+.main-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+  margin-top: 0;
+  padding: 32px 40px 0;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .main-grid { grid-template-columns: 1fr; padding: 24px 24px 0; }
+  .header { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .model-status-bar { justify-content: flex-start; }
+}
+
+/* ═══════════════════════════════════════════
+   PANEL BASE
+═══════════════════════════════════════════ */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  animation: fadeUp 0.5s ease both;
+  box-shadow: 0 4px 20px rgba(102,126,234,0.08);
+}
+
+.panel-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface2);
+}
+
+.panel-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.panel-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+}
+
+.panel-body {
+  padding: 24px;
+}
+
+/* ═══════════════════════════════════════════
+   LEFT COLUMN
+═══════════════════════════════════════════ */
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Upload Panel */
+.upload-zone {
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 36px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  background: var(--surface2);
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--primary-dim), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.upload-zone:hover::before,
+.upload-zone.dragover::before { opacity: 1; }
+
+.upload-zone:hover,
+.upload-zone.dragover {
+  border-color: var(--primary);
+  background: var(--surface3);
+}
+
+.upload-zone.has-file {
+  border-style: solid;
+  border-color: var(--primary-mid);
+}
+
+.upload-icon-wrap {
+  width: 56px; height: 56px;
+  margin: 0 auto 16px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: transform 0.2s;
+  position: relative;
+  z-index: 1;
+}
+
+.upload-zone:hover .upload-icon-wrap { transform: translateY(-3px); }
+
+.upload-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.upload-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  position: relative;
+  z-index: 1;
+}
+
+#fileInput { display: none; }
+
+/* Preview */
+.preview-wrap {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 1;
+  display: none;
+}
+
+.preview-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.preview-badge {
+  position: absolute;
+  bottom: 10px; left: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid var(--border2);
+  border-radius: 100px;
+  color: var(--text-mid);
+  backdrop-filter: blur(8px);
+}
+
+/* Predict Button */
+.btn-predict {
+  width: 100%;
+  padding: 16px;
+  background: var(--grad);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-predict::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(255,255,255,0.15), transparent);
+}
+
+.btn-predict:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(102,126,234,0.45);
+}
+
+.btn-predict:disabled {
+  background: var(--surface3);
+  color: var(--text-dim);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ═══════════════════════════════════════════
+   RIGHT COLUMN
+═══════════════════════════════════════════ */
+.right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Empty state */
+.empty-state {
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  opacity: 0.3;
+}
+
+.empty-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-mid);
+  margin-bottom: 8px;
+}
+
+.empty-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+/* ═══════════════════════════════════════════
+   PREDICTION CARDS
+═══════════════════════════════════════════ */
+.pred-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 1100px) {
+  .pred-grid { grid-template-columns: 1fr; }
+}
+
+.pred-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: border-color 0.3s, transform 0.2s;
+  animation: fadeUp 0.4s ease both;
+}
+
+.pred-card:hover { transform: translateY(-2px); }
+
+.pred-card.tb    { border-color: var(--red); box-shadow: inset 0 0 30px var(--red-dim); }
+.pred-card.normal { border-color: var(--green); box-shadow: inset 0 0 30px var(--green-dim); }
+
+.pred-model-name {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pred-model-name::before {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 1px;
+  background: var(--text-dim);
+}
+
+.pred-verdict {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.pred-verdict.tb     { color: var(--red); }
+.pred-verdict.normal { color: var(--green); }
+
+.pred-conf {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-mid);
+  margin-bottom: 16px;
+}
+
+.prob-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prob-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prob-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  width: 52px;
+  flex-shrink: 0;
+}
+
+.prob-track {
+  flex: 1;
+  height: 5px;
+  background: var(--surface3);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.prob-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 1s cubic-bezier(0.16,1,0.3,1);
+}
+
+.prob-fill.normal { background: var(--green); }
+.prob-fill.tb     { background: var(--red); }
+
+.prob-pct {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-mid);
+  width: 38px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════
+   XAI PANEL
+═══════════════════════════════════════════ */
+.xai-controls-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.ctrl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ctrl-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.ctrl-select {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238fa3bd' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.ctrl-select:focus { border-color: var(--primary); }
+
+.btn-explain {
+  padding: 10px 22px;
+  background: var(--grad);
+  border: none;
+  color: white;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-explain:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102,126,234,0.4);
+}
+
+.btn-explain:disabled {
+  background: var(--surface3);
+  color: var(--text-dim);
+  cursor: not-allowed;
+}
+
+/* XAI method note */
+.method-note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 8px 12px;
+  background: var(--surface2);
+  border-radius: 8px;
+  border-left: 2px solid var(--amber);
+  display: none;
+}
+
+.method-note.visible { display: block; }
+
+/* XAI Result Images */
+.xai-img-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+@media (max-width: 700px) {
+  .xai-img-grid { grid-template-columns: 1fr; }
+}
+
+.xai-img-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.xai-img-label {
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mid);
+  border-bottom: 1px solid var(--border);
+}
+
+.xai-img-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* LIME Metadata bar */
+.lime-meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.lime-meta-item {
+  background: var(--surface2);
+  padding: 14px 16px;
+  text-align: center;
+}
+
+.lime-meta-value {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.lime-meta-key {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+@media (max-width: 600px) {
+  .lime-meta { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ═══════════════════════════════════════════
+   LOADING OVERLAY
+═══════════════════════════════════════════ */
+.loading-overlay {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  gap: 20px;
+}
+
+.loading-overlay.active { display: flex; }
+
+.loader-ring {
+  width: 48px; height: 48px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loader-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-mid);
+  text-align: center;
+}
+
+.loader-progress {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* LIME long-wait note */
+.lime-wait {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--amber);
+  padding: 8px 16px;
+  background: var(--amber-dim);
+  border-radius: 8px;
+  border: 1px solid rgba(255,179,0,0.2);
+  text-align: center;
+  display: none;
+}
+
+.lime-wait.visible { display: block; }
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════ */
+@keyframes fadeDown {
+  from { opacity:0; transform: translateY(-16px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(16px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+<div style="background:white; border-radius:24px; box-shadow:0 24px 80px rgba(0,0,0,0.22); overflow:hidden; padding-bottom:40px;">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-eyebrow">XAI Medical Imaging System</div>
+      <h1>TB<span>—</span>XAI</h1>
+      <div class="header-sub">Tuberculosis Detection · Explainable AI · DenseNet121</div>
+    </div>
+    <div class="model-status-bar" id="statusBar">
+      <div class="status-pill" id="pill-cnn"><span class="status-dot"></span>CNN</div>
+      <div class="status-pill" id="pill-svm"><span class="status-dot"></span>SVM</div>
+      <div class="status-pill" id="pill-xgb"><span class="status-dot"></span>XGB</div>
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT COL -->
+    <div class="left-col">
+
+      <!-- Upload Panel -->
+      <div class="panel" style="animation-delay:0.1s">
+        <div class="panel-header">
+          <span class="panel-title">Input</span>
+          <span class="panel-tag">Chest X-Ray</span>
+        </div>
+        <div class="panel-body" style="display:flex; flex-direction:column; gap:16px;">
+          <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon-wrap">📁</div>
+            <div class="upload-title">Upload X-Ray Image</div>
+            <div class="upload-sub">PNG / JPG · Click or drag & drop</div>
+            <input type="file" id="fileInput" accept="image/*">
+          </div>
+          <div class="preview-wrap" id="previewWrap">
+            <img id="previewImg" src="" alt="preview">
+            <div class="preview-badge" id="previewBadge">—</div>
+          </div>
+          <button class="btn-predict" id="predictBtn" disabled>Run Analysis</button>
+        </div>
+      </div>
+
+      <!-- XAI Controls Panel -->
+      <div class="panel" id="xaiCtrlPanel" style="display:none; animation-delay:0.2s">
+        <div class="panel-header">
+          <span class="panel-title">Explainability</span>
+          <span class="panel-tag">XAI</span>
+        </div>
+        <div class="panel-body" style="display:flex; flex-direction:column; gap:14px;">
+          <div class="xai-controls-row">
+            <div class="ctrl-group">
+              <span class="ctrl-label">Model</span>
+              <select class="ctrl-select" id="modelSelect"></select>
+            </div>
+            <div class="ctrl-group">
+              <span class="ctrl-label">Method</span>
+              <select class="ctrl-select" id="methodSelect">
+                <option value="gradcam">Grad-CAM</option>
+                <option value="lime">LIME</option>
+              </select>
+            </div>
+            <button class="btn-explain" id="explainBtn">→ Explain</button>
+          </div>
+          <div class="method-note" id="methodNote">
+            ⚠ Grad-CAM is only available for CNN
+          </div>
+          <div class="lime-wait" id="limeWait">
+            ⏳ LIME generates 300 perturbations — estimated 60–180s
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COL -->
+    <div class="right-col">
+
+      <!-- Results Panel -->
+      <div class="panel" style="animation-delay:0.15s">
+        <div class="panel-header">
+          <span class="panel-title">Predictions</span>
+          <span class="panel-tag" id="resultsTag">awaiting input</span>
+        </div>
+        <div id="resultsBody">
+          <!-- Empty State -->
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">🫁</div>
+            <div class="empty-title">No image uploaded</div>
+            <div class="empty-sub">Upload a chest X-ray to begin analysis</div>
+          </div>
+          <!-- Loading -->
+          <div class="loading-overlay" id="predLoading">
+            <div class="loader-ring"></div>
+            <div class="loader-text">Running inference across all models</div>
+            <div class="loader-progress" id="predProgress">CNN · SVM · XGBoost</div>
+          </div>
+          <!-- Prediction Grid -->
+          <div class="panel-body" id="predGrid" style="display:none;">
+            <div class="pred-grid" id="predCards"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- XAI Results Panel -->
+      <div class="panel" id="xaiResultPanel" style="display:none; animation-delay:0.2s">
+        <div class="panel-header">
+          <span class="panel-title">XAI Visualization</span>
+          <span class="panel-tag" id="xaiTag">—</span>
+        </div>
+        <div id="xaiBody">
+          <div class="loading-overlay" id="xaiLoading">
+            <div class="loader-ring"></div>
+            <div class="loader-text" id="xaiLoadText">Generating explanation...</div>
+          </div>
+          <div id="xaiContent" style="display:none;">
+            <div class="panel-body">
+              <div class="xai-img-grid" id="xaiImgGrid"></div>
+              <div class="lime-meta" id="limeMeta" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div><!-- close white card -->
+</div><!-- close app -->
+
+<script>
+/* ════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════ */
+let uploadedFile  = null;
+let modelsReady   = { cnn: false, svm: false, xgb: false };
+let limeTimer     = null;
+
+/* ════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  checkModels();
+  bindUpload();
+  bindPredict();
+  bindExplain();
+  bindModelChange();
+});
+
+/* ════════════════════════════════════════════
+   MODEL STATUS
+════════════════════════════════════════════ */
+async function checkModels() {
+  try {
+    const res  = await fetch('/models/status');
+    const data = await res.json();
+    modelsReady = data;
+    updateStatusBar();
+    populateModelSelect();
+  } catch (e) {
+    console.warn('Could not reach /models/status', e);
+  }
+}
+
+function updateStatusBar() {
+  ['cnn','svm','xgb'].forEach(m => {
+    const pill = document.getElementById(`pill-${m}`);
+    if (modelsReady[m]) pill.classList.add('ready');
+  });
+}
+
+function populateModelSelect() {
+  const sel = document.getElementById('modelSelect');
+  sel.innerHTML = '';
+  const labels = { cnn: 'CNN — DenseNet121', svm: 'SVM + CNN Features', xgb: 'XGBoost + CNN Features' };
+  ['cnn','svm','xgb'].forEach(m => {
+    if (modelsReady[m]) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = labels[m];
+      sel.appendChild(opt);
+    }
+  });
+  updateMethodSelect();
+}
+
+/* ════════════════════════════════════════════
+   UPLOAD
+════════════════════════════════════════════ */
+function bindUpload() {
+  const zone  = document.getElementById('uploadZone');
+  const input = document.getElementById('fileInput');
+
+  zone.addEventListener('click', () => input.click());
+  input.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', ()  => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) handleFile(f);
+  });
+}
+
+function handleFile(file) {
+  uploadedFile = file;
+
+  // Preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wrap = document.getElementById('previewWrap');
+    const img  = document.getElementById('previewImg');
+    const badge = document.getElementById('previewBadge');
+    img.src = e.target.result;
+    wrap.style.display = 'block';
+    badge.textContent  = file.name;
+    document.getElementById('uploadZone').classList.add('has-file');
+  };
+  reader.readAsDataURL(file);
+
+  document.getElementById('predictBtn').disabled = false;
+
+  // Reset results
+  document.getElementById('emptyState').style.display  = 'none';
+  document.getElementById('predGrid').style.display    = 'none';
+  document.getElementById('xaiCtrlPanel').style.display = 'none';
+  document.getElementById('xaiResultPanel').style.display = 'none';
+  document.getElementById('resultsTag').textContent = 'ready';
+}
+
+/* ════════════════════════════════════════════
+   PREDICT
+════════════════════════════════════════════ */
+function bindPredict() {
+  document.getElementById('predictBtn').addEventListener('click', runPredict);
+}
+
+async function runPredict() {
+  if (!uploadedFile) return;
+
+  // Show loader
+  document.getElementById('emptyState').style.display  = 'none';
+  document.getElementById('predGrid').style.display    = 'none';
+  document.getElementById('predLoading').classList.add('active');
+  document.getElementById('resultsTag').textContent = 'processing…';
+
+  const fd = new FormData();
+  fd.append('image', uploadedFile);
+
+  try {
+    const res  = await fetch('/predict', { method: 'POST', body: fd });
+    const data = await res.json();
+
+    if (data.success) {
+      renderPredictions(data.predictions);
+    } else {
+      showError(data.error || 'Unknown error');
+    }
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    document.getElementById('predLoading').classList.remove('active');
+  }
+}
+
+function renderPredictions(predictions) {
+  const container = document.getElementById('predCards');
+  container.innerHTML = '';
+
+  const modelLabel = { cnn: 'CNN', svm: 'SVM', xgb: 'XGBoost' };
+
+  Object.entries(predictions).forEach(([model, p], i) => {
+    const isTB      = p.class === 'TB';
+    const card      = document.createElement('div');
+    card.className  = `pred-card ${isTB ? 'tb' : 'normal'}`;
+    card.style.animationDelay = `${i * 0.08}s`;
+
+    const confPct    = (p.confidence * 100).toFixed(1);
+    const normalPct  = (p.prob_normal * 100).toFixed(1);
+    const tbPct      = (p.prob_tb * 100).toFixed(1);
+
+    card.innerHTML = `
+      <div class="pred-model-name">${modelLabel[model] || model}</div>
+      <div class="pred-verdict ${isTB ? 'tb' : 'normal'}">
+        ${isTB ? '🦠 TB' : '✅ Normal'}
+      </div>
+      <div class="pred-conf">${confPct}% confidence</div>
+      <div class="prob-bars">
+        <div class="prob-row">
+          <span class="prob-label">Normal</span>
+          <div class="prob-track"><div class="prob-fill normal" style="width:0%" data-w="${normalPct}%"></div></div>
+          <span class="prob-pct">${normalPct}%</span>
+        </div>
+        <div class="prob-row">
+          <span class="prob-label">TB</span>
+          <div class="prob-track"><div class="prob-fill tb" style="width:0%" data-w="${tbPct}%"></div></div>
+          <span class="prob-pct">${tbPct}%</span>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  document.getElementById('predGrid').style.display = 'block';
+  document.getElementById('resultsTag').textContent = `${Object.keys(predictions).length} models`;
+
+  // Show XAI panel
+  document.getElementById('xaiCtrlPanel').style.display = 'block';
+
+  // Animate bars after paint
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.prob-fill').forEach(el => {
+        el.style.width = el.dataset.w;
+      });
+    });
+  });
+}
+
+/* ════════════════════════════════════════════
+   EXPLAIN
+════════════════════════════════════════════ */
+function bindExplain() {
+  document.getElementById('explainBtn').addEventListener('click', runExplain);
+}
+
+function bindModelChange() {
+  document.getElementById('modelSelect').addEventListener('change', updateMethodSelect);
+  document.getElementById('methodSelect').addEventListener('change', updateMethodNote);
+}
+
+function updateMethodSelect() {
+  const model  = document.getElementById('modelSelect').value;
+  const method = document.getElementById('methodSelect');
+
+  if (model !== 'cnn') {
+    // Remove gradcam option
+    [...method.options].forEach(o => { if (o.value === 'gradcam') o.remove(); });
+    if (![...method.options].find(o => o.value === 'lime')) {
+      const o = document.createElement('option');
+      o.value = 'lime'; o.textContent = 'LIME';
+      method.appendChild(o);
+    }
+  } else {
+    if (![...method.options].find(o => o.value === 'gradcam')) {
+      const o = document.createElement('option');
+      o.value = 'gradcam'; o.textContent = 'Grad-CAM';
+      method.insertBefore(o, method.firstChild);
+    }
+    if (![...method.options].find(o => o.value === 'lime')) {
+      const o = document.createElement('option');
+      o.value = 'lime'; o.textContent = 'LIME';
+      method.appendChild(o);
+    }
+  }
+  updateMethodNote();
+}
+
+function updateMethodNote() {
+  const model  = document.getElementById('modelSelect').value;
+  const method = document.getElementById('methodSelect').value;
+  const note   = document.getElementById('methodNote');
+  const wait   = document.getElementById('limeWait');
+
+  note.classList.toggle('visible', method === 'gradcam' && model !== 'cnn');
+  wait.classList.toggle('visible', method === 'lime');
+}
+
+async function runExplain() {
+  if (!uploadedFile) return;
+
+  const model  = document.getElementById('modelSelect').value;
+  const method = document.getElementById('methodSelect').value;
+
+  // Show XAI panel / loader
+  const panel = document.getElementById('xaiResultPanel');
+  panel.style.display = 'block';
+  document.getElementById('xaiContent').style.display = 'none';
+  document.getElementById('xaiLoading').classList.add('active');
+  document.getElementById('xaiTag').textContent = `${model.toUpperCase()} · ${method}`;
+  document.getElementById('limeMeta').style.display = 'none';
+
+  // LIME timer display
+  let elapsed = 0;
+  if (limeTimer) clearInterval(limeTimer);
+  if (method === 'lime') {
+    limeTimer = setInterval(() => {
+      elapsed++;
+      document.getElementById('xaiLoadText').textContent =
+        `Generating LIME explanation… ${elapsed}s`;
+    }, 1000);
+  } else {
+    document.getElementById('xaiLoadText').textContent = 'Generating Grad-CAM heatmap…';
+  }
+
+  const fd = new FormData();
+  fd.append('image', uploadedFile);
+  fd.append('model', model);
+  fd.append('method', method);
+
+  try {
+    const res  = await fetch('/explain', { method: 'POST', body: fd });
+    const data = await res.json();
+
+    if (data.success) {
+      renderXAI(data, method);
+    } else {
+      showError(data.error || 'XAI error');
+    }
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    if (limeTimer) clearInterval(limeTimer);
+    document.getElementById('xaiLoading').classList.remove('active');
+  }
+}
+
+function renderXAI(data, method) {
+  const grid = document.getElementById('xaiImgGrid');
+  grid.innerHTML = '';
+
+  const titles = method === 'gradcam'
+    ? ['Grad-CAM Heatmap', 'Overlay on X-Ray']
+    : ['Superpixels · Positive · Negative', 'Explanation Map (RdBu)'];
+
+  ['heatmap','overlay'].forEach((key, i) => {
+    if (!data.images[key]) return;
+    const card  = document.createElement('div');
+    card.className = 'xai-img-card';
+    card.innerHTML = `
+      <div class="xai-img-label">${titles[i]}</div>
+      <img src="${data.images[key]}" alt="${key}">
+    `;
+    grid.appendChild(card);
+  });
+
+  // LIME metadata
+  if (method === 'lime' && data.metadata) {
+    const m    = data.metadata;
+    const meta = document.getElementById('limeMeta');
+    meta.style.display = 'grid';
+    meta.innerHTML = [
+      { v: m.predicted_class,   k: 'Prediction' },
+      { v: (m.prob_tb * 100).toFixed(1) + '%', k: 'P(TB)' },
+      { v: (m.confidence * 100).toFixed(1) + '%', k: 'Confidence' },
+      { v: m.r2_score.toFixed(3), k: 'R² Score' },
+    ].map(it => `
+      <div class="lime-meta-item">
+        <div class="lime-meta-value">${it.v}</div>
+        <div class="lime-meta-key">${it.k}</div>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('xaiContent').style.display = 'block';
+}
+
+/* ════════════════════════════════════════════
+   UTILS
+════════════════════════════════════════════ */
+function showError(msg) {
+  document.getElementById('predLoading').classList.remove('active');
+  document.getElementById('xaiLoading').classList.remove('active');
+  alert('Error: ' + msg);
+}
+</script>
+</body>
+</html>
