@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-app.py — TB X-Ray XAI Demo
-รวม CNN / SVM / XGBoost / Grad-CAM / LIME ในไฟล์เดียว
-Fix: dn_preprocess แทน /255.0, Grad-CAM layer ตรงกับ Colab
-"""
-
 from flask import Flask, request, jsonify, send_from_directory, render_template_string
 from flask_cors import CORS
 import numpy as np
@@ -36,9 +29,9 @@ CORS(app)
 # CONFIGURATION — แก้ path ตรงนี้
 # ─────────────────────────────────────────────
 MODEL_PATHS = {
-    'cnn': r'D:\DEMO\exp2_best.keras',
-    'svm': r'D:\DEMO\svm1_best.pkl',
-    'xgb': r'D:\DEMO\xgb1_best.json',
+    'cnn': r'',
+    'svm': r'',
+    'xgb': r'',
 }
 
 INPUT_SIZE        = (320, 320)
