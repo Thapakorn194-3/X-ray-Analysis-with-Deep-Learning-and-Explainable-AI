@@ -29,9 +29,9 @@ CORS(app)
 # CONFIGURATION — แก้ path ตรงนี้
 # ─────────────────────────────────────────────
 MODEL_PATHS = {
-    'cnn': r'',
-    'svm': r'',
-    'xgb': r'',
+    'cnn': r'D:\X-ray-Analysis-with-Deep-Learning-and-Explainable-AI\exp2_best.keras',
+    'svm': r'D:\X-ray-Analysis-with-Deep-Learning-and-Explainable-AI\svm1_best.pkl',
+    'xgb': r'D:\X-ray-Analysis-with-Deep-Learning-and-Explainable-AI\xgb1_best.json',
 }
 
 INPUT_SIZE        = (320, 320)
